@@ -98,6 +98,24 @@
 
                     $simulate = (isset($_POST['simulate']) && $_POST['simulate'] === "on");
 
+		    // --- START: Auto-Inject IP for FortiGate ---
+                    // เปิดเชื่อมต่อ Database อีกครั้งเพื่อค้นหา IP
+                    include('../common/includes/db_open.php');
+                    if (isset($dbSocket) && !empty($username)) {
+                        // ค้นหา IP ล่าสุดของ User นี้
+                        $sql_ip = "SELECT framedipaddress FROM radacct WHERE username='".$username."' AND acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 1";
+                        $res_ip = $dbSocket->query($sql_ip);
+
+                        // ถ้าเจอ IP ในฐานข้อมูล
+                        if ($res_ip && $row_ip = $res_ip->fetchRow()) {
+                             if (!empty($row_ip[0])) {
+                                 // แอบเติม IP เข้าไปในตัวแปร customAttributes
+                                 $customAttributes .= "\nFramed-IP-Address=" . $row_ip[0];
+                             }
+                        }
+                    }
+                    // --- END: Auto-Inject IP --
+
                     // this will be passed to user_auth function
                     $params =  array(
                                         "nas_id" => intval(str_replace("nas-", "", $nas_id)),
@@ -231,7 +249,7 @@
         $input_descriptors2[] = array(
                                         "type" => "submit",
                                         "name" => "submit",
-                                        "value" => t('all','TestUser'),
+                                        "value" => t('all','Disconnect'),
                                      );
 
         // set navbar stuff
